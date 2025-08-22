@@ -23,7 +23,7 @@ urlpatterns = [
     ),
 ]
 
-handler403 = 'pages.views.permission_denied'
+handler403 = 'pages.views.csrf_failure'
 
 handler404 = 'pages.views.page_not_found'
 

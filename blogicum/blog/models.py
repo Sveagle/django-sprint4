@@ -182,4 +182,4 @@ class Comment(models.Model):
         default_related_name = 'comments'
 
     def __str__(self):
-        return f'Комментарий {self.author} к посту {self.post}'
+        return self.text[:20]

@@ -193,23 +193,24 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
     model = Comment
     form_class = CommentForm
-    post = None
 
-    def dispatch(self, request, *args, **kwargs):
-        """Проверяем существование поста перед обработкой."""
-        self.post = get_object_or_404(Post, pk=kwargs['post_id'])
-        return super().dispatch(request, *args, **kwargs)
+    def get_post_object(self):
+        """Получаем пост для комментария."""
+        return get_object_or_404(Post, pk=self.kwargs['post_id'])
 
     def form_valid(self, form):
         """Устанавливаем автора и пост комментария."""
+        post_obj = self.get_post_object()
         form.instance.author = self.request.user
-        form.instance.post = self.post
+        form.instance.post = post_obj
+        form.instance.is_published = True
         return super().form_valid(form)
 
     def get_success_url(self):
         """Возвращаем URL страницы поста."""
+        post_obj = self.get_post_object()
         return reverse_lazy('blog:post_detail',
-                            kwargs={'post_id': self.post.pk})
+                            kwargs={'post_id': post_obj.pk})
 
 
 class CommentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -284,7 +285,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     model = User
     form_class = UserChangeForm
-    template_name = 'blog/edit_profile.html'
+    template_name = 'blog/user.html'
 
     def get_object(self, queryset=None):
         """Возвращает текущего пользователя для редактирования."""

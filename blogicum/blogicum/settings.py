@@ -113,7 +113,7 @@ LOGIN_REDIRECT_URL = 'blog:index'
 
 LOGIN_URL = 'login'
 
-CSRF_FAILURE_VIEW = 'pages.views.permission_denied'
+CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 
 INTERNAL_IPS = [
     '127.0.0.1',

@@ -18,9 +18,13 @@ urlpatterns = [
         name='category_posts'
     ),
     path('auth/registration/', SignupView.as_view(), name='registration'),
+    path(
+        'profile/edit_profile/',
+        ProfileUpdateView.as_view(),
+        name='edit_profile'
+    ),
     path('profile/<str:username>/', ProfileView.as_view(), name='profile'),
     path('posts/create/', PostCreateView.as_view(), name='create_post'),
-    path('profile/edit/', ProfileUpdateView.as_view(), name='edit_profile'),
     path(
         'posts/<int:post_id>/edit/',
         PostUpdateView.as_view(),
