@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.db.models import QuerySet, Count
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
@@ -156,6 +156,14 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         """Проверяет, является ли пользователь автором поста."""
         return self.get_object().author == self.request.user
+
+    def handle_no_permission(self):
+        """Обрабатывает случай, когда пользователь не проходит проверку."""
+        if not self.request.user.is_authenticated:
+            return redirect('login')
+
+        post_id = self.kwargs.get('post_id')
+        return redirect('blog:post_detail', post_id=post_id)
 
     def get_success_url(self):
         """Возвращает URL для перенаправления после успешного обновления."""

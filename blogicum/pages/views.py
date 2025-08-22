@@ -23,5 +23,5 @@ def server_error(request):
     return render(request, 'pages/500.html', status=500)
 
 
-def permission_denied(request, reason=''):
+def permission_denied(request, exception=''):
     return render(request, 'pages/403csrf.html', status=403)
