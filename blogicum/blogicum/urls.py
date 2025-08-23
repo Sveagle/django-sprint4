@@ -6,11 +6,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.urls import include, path, reverse_lazy
 from django.views.generic.edit import CreateView
 
-
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('pages/', include('pages.urls', namespace='pages')),
-    path('', include('blog.urls', namespace='blog')),
+    path('pages/', include('pages.urls')),
     path('auth/', include('django.contrib.auth.urls')),
     path(
         'auth/registration/',
@@ -21,12 +19,11 @@ urlpatterns = [
         ),
         name='registration',
     ),
+    path('', include('blog.urls')),
 ]
 
 handler403 = 'pages.views.csrf_failure'
-
 handler404 = 'pages.views.page_not_found'
-
 handler500 = 'pages.views.server_error'
 
 if settings.DEBUG:

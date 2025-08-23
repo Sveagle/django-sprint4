@@ -158,20 +158,22 @@ class Post(PublishedCreatedModel):
         return self._truncate_str(self.title)
 
 
-class Comment(models.Model):
+class Comment(PublishedCreatedModel):
     """Класс для комментариев."""
 
-    text = models.TextField('Текст комментария')
+    text = models.TextField(
+        verbose_name='Текст комментария'
+    )
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
+        verbose_name='Публикация'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        verbose_name='Автор'
     )
-    is_published = models.BooleanField(default=True)
 
     class Meta:
         """Мета-класс."""
@@ -182,4 +184,6 @@ class Comment(models.Model):
         default_related_name = 'comments'
 
     def __str__(self):
-        return self.text[:20]
+        return (f'Комментарий {self._truncate_str(self.text)} '
+                f'к посту "{self._truncate_str(self.post.title)}'
+                f'от {self.author.username}')
