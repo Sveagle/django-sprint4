@@ -2,48 +2,17 @@
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.db.models import QuerySet, Count
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
 
 from blog.constants import POSTS_PER_PAGE
 from blog.forms import CommentForm, PostForm
+from blog.mixins import CommentMixin, PublishedPostsMixin
 from blog.models import Comment, Category, Post
-
-
-class PublishedPostsMixin:
-    """Миксин для работы с постами."""
-
-    def apply_common_annotations(self, queryset):
-        """Применяет общие аннотации и select_related к queryset."""
-        return queryset.select_related(
-            'author', 'category', 'location'
-        ).annotate(
-            comment_count=Count('comments')
-        )
-
-    def filter_published_posts(self, queryset):
-        """Фильтрует только опубликованные посты."""
-        return queryset.filter(
-            is_published=True,
-            pub_date__lte=timezone.now(),
-            category__is_published=True
-        )
-
-    def get_base_queryset(self):
-        """Базовый QuerySet для всех постов с аннотациями."""
-        queryset = Post.objects.all()
-        queryset = self.apply_common_annotations(queryset)
-        return queryset.order_by('-pub_date')
-
-    def get_queryset(self):
-        """Возвращает опубликованные посты (для ListView)."""
-        queryset = self.get_base_queryset()
-        return self.filter_published_posts(queryset)
 
 
 class IndexView(PublishedPostsMixin, ListView):
@@ -52,8 +21,18 @@ class IndexView(PublishedPostsMixin, ListView):
     template_name = 'blog/index.html'
     paginate_by = POSTS_PER_PAGE
 
+    def get_queryset(self):
+        """
+        Возвращает опубликованные посты для главной страницы.
 
-class PostDetailView(DetailView):
+        Returns:
+            QuerySet: Отфильтрованные опубликованные посты
+        """
+        queryset = self.get_base_queryset()
+        return self.filter_published_posts(queryset)
+
+
+class PostDetailView(PublishedPostsMixin, DetailView):
     """
     Представление для детального просмотра поста.
 
@@ -72,19 +51,14 @@ class PostDetailView(DetailView):
         Returns:
             QuerySet: Все посты для автора, только опубликованные для других.
         """
-        queryset = Post.objects.select_related(
-            'category',
-            'author',
-            'location')
+        queryset = self.get_base_queryset()
+
         if self.request.user.is_authenticated:
             post = get_object_or_404(Post, pk=self.kwargs['post_id'])
             if self.request.user == post.author:
                 return queryset
-        return queryset.filter(
-            pub_date__lte=timezone.now(),
-            is_published=True,
-            category__is_published=True
-        )
+
+        return self.filter_published_posts(queryset)
 
     def get_context_data(self, **kwargs):
         """
@@ -108,7 +82,6 @@ class CategoryPostsView(PublishedPostsMixin, ListView):
     """Представление для отображения постов определенной категории."""
 
     template_name = 'blog/category.html'
-    context_object_name = 'post_list'
     paginate_by = POSTS_PER_PAGE
 
     def get_category(self) -> Category:
@@ -126,9 +99,9 @@ class CategoryPostsView(PublishedPostsMixin, ListView):
         Returns:
             QuerySet: Посты отфильтрованные по категории.
         """
-        queryset = super().get_queryset()
-        category = self.get_category()
-        return queryset.filter(category=category)
+        return self.filter_published_posts(
+            Post.objects.filter(category=self.get_category())
+        )
 
     def get_context_data(self, **kwargs) -> dict:
         """
@@ -233,54 +206,24 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return reverse('blog:post_detail', kwargs={'post_id': post_obj.pk})
 
 
-class CommentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class CommentUpdateView(CommentMixin, UpdateView):
     """Представление для редактирования комментария."""
 
-    model = Comment
     form_class = CommentForm
-    template_name = 'blog/comment.html'
-    pk_url_kwarg = 'comment_id'
-
-    def test_func(self):
-        """Проверяет, является ли пользователь автором комментария."""
-        return self.get_object().author == self.request.user
-
-    def get_success_url(self):
-        """Возвращает URL для перенаправления после успешного обновления."""
-        return reverse(
-            'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
-        )
 
 
-class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class CommentDeleteView(CommentMixin, DeleteView):
     """Представление для удаления комментария."""
-
-    model = Comment
-    pk_url_kwarg = 'comment_id'
-    template_name = 'blog/comment.html'
-
-    def test_func(self):
-        """Проверяет, является ли пользователь автором комментария."""
-        return self.get_object().author == self.request.user
-
-    def get_success_url(self):
-        """Возвращает URL для перенаправления после успешного удаления."""
-        return reverse(
-            'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
-        )
 
 
 class ProfileView(PublishedPostsMixin, ListView):
     """Представление для отображения профиля пользователя с его постами."""
 
     template_name = 'blog/profile.html'
-    context_object_name = 'posts'
     paginate_by = POSTS_PER_PAGE
 
     def get_profile_user(self):
-        """Возвращает пользователя профиля."""
+        """Возвращает профиль пользователя."""
         return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self):
@@ -293,10 +236,15 @@ class ProfileView(PublishedPostsMixin, ListView):
         if self.request.user != user_profile:
             queryset = self.filter_published_posts(queryset)
 
-        return queryset.order_by('-pub_date')
+        return queryset
 
     def get_context_data(self, **kwargs):
-        """Добавляет информацию о пользователе профиля в контекст."""
+        """
+        Добавляет пользователя профиля в контекст шаблона.
+
+        Returns:
+            dict: Контекст данных для шаблона
+        """
         context = super().get_context_data(**kwargs)
         context['profile'] = self.get_profile_user()
         return context

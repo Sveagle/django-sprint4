@@ -1,5 +1,6 @@
 """URL конфугурация приложения blog."""
 from django.urls import include, path
+
 from blog import views
 
 app_name = 'blog'

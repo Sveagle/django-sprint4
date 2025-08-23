@@ -185,5 +185,5 @@ class Comment(PublishedCreatedModel):
 
     def __str__(self):
         return (f'Комментарий {self._truncate_str(self.text)} '
-                f'к посту "{self._truncate_str(self.post.title)}'
+                f'к посту "{self.post}'
                 f'от {self.author.username}')

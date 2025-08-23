@@ -11,14 +11,11 @@ class PostForm(forms.ModelForm):
         """Мета-класс формы Post."""
 
         model = Post
-        exclude = ('author', 'created_at',)
+        exclude = ('author',)
         widgets = {
             'pub_date': forms.DateTimeInput(
                 attrs={'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M'),
-            'is_published': forms.CheckboxInput(
-                attrs={'class': 'form-check-input'}
-            )
         }
 
 
