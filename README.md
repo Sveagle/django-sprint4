@@ -33,32 +33,32 @@ Content Moderation
 Installation
 
   Clone the repository
-
-git clone <repository-url>
-cd django-sprint4
+    
+    git clone <repository-url>
+    cd django-sprint4
 
 Create virtual environment
   
-  python -m venv venv
-  source venv/bin/activate  # Linux/Mac
-  or
-  venv\Scripts\activate  # Windows
+    python -m venv venv
+    source venv/bin/activate  # Linux/Mac
+    or
+    venv\Scripts\activate  # Windows
 
 Install dependencies
 
-  pip install -r requirements.txt
+    pip install -r requirements.txt
 
 Database setup
 
-  python manage.py migrate
+    python manage.py migrate
 
 Create superuser
 
-  python manage.py createsuperuser
+    python manage.py createsuperuser
 
 Run development server
 
-  python manage.py runserver
+    python manage.py runserver
 
 Key Components
 
